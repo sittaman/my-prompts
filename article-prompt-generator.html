@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article Prompt Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..600&display=swap" rel="stylesheet">
+  <style>
+    /* Design tokens */
+    :root, [data-theme="light"] {
+      --color-bg: #f7f6f2;
+      --color-surface: #f9f8f5;
+      --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f3f0ec;
+      --color-border: #d4d1ca;
+      --color-divider: #dcd9d5;
+      --color-text: #28251d;
+      --color-text-muted: #7a7974;
+      --color-text-faint: #bab9b4;
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-primary-active: #0f3638;
+      --color-primary-highlight: #cedcd8;
+      --color-success: #437a22;
+      --color-error: #a12c7b;
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
+      --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.08);
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      --font-body: 'Inter', system-ui, sans-serif;
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+      --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+      --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+      --space-16: 4rem;
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #171614;
+      --color-surface: #1c1b19;
+      --color-surface-2: #201f1d;
+      --color-surface-offset: #1d1c1a;
+      --color-border: #393836;
+      --color-divider: #262523;
+      --color-text: #cdccca;
+      --color-text-muted: #797876;
+      --color-text-faint: #5a5957;
+      --color-primary: #4f98a3;
+      --color-primary-hover: #227f8b;
+      --color-primary-active: #1a626b;
+      --color-primary-highlight: #313b3b;
+      --color-success: #6daa45;
+      --color-error: #d163a7;
+      --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
+      --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --color-bg: #171614;
+        --color-surface: #1c1b19;
+        --color-surface-2: #201f1d;
+        --color-surface-offset: #1d1c1a;
+        --color-border: #393836;
+        --color-divider: #262523;
+        --color-text: #cdccca;
+        --color-text-muted: #797876;
+        --color-text-faint: #5a5957;
+        --color-primary: #4f98a3;
+        --color-primary-hover: #227f8b;
+        --color-primary-active: #1a626b;
+        --color-primary-highlight: #313b3b;
+        --color-success: #6daa45;
+        --color-error: #d163a7;
+        --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
+        --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3);
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      -webkit-text-size-adjust: none;
+      text-size-adjust: none;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background-color: var(--color-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-6) var(--space-4);
+      transition: background-color var(--transition), color var(--transition);
+    }
+    input, button, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: none; }
+    :focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Layout */
+    .page-wrapper {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .header-subtitle {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+      transition: color var(--transition), background var(--transition);
+    }
+    .theme-toggle:hover {
+      color: var(--color-text);
+      background: var(--color-surface-offset);
+    }
+    .theme-toggle:active { background: var(--color-border); }
+
+    /* Card */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid oklch(from var(--color-text) l c h / 0.1);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    /* Form group */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .form-label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .form-hint {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+    .input-row {
+      display: flex;
+      gap: var(--space-2);
+    }
+    .url-input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 var(--space-4);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+    .url-input::placeholder { color: var(--color-text-faint); }
+    .url-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.15);
+    }
+    .url-input.error {
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 3px oklch(from var(--color-error) l c h / 0.12);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      height: 44px;
+      padding: 0 var(--space-5);
+      background: var(--color-primary);
+      color: #fff;
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-primary:active { background: var(--color-primary-active); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Error message */
+    .error-msg {
+      font-size: var(--text-xs);
+      color: var(--color-error);
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--color-divider);
+    }
+
+    /* Output section */
+    .output-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 280ms ease, transform 280ms ease;
+      pointer-events: none;
+    }
+    .output-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+    .output-label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      height: 32px;
+      padding: 0 var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      background: var(--color-surface-2);
+      transition: color var(--transition), border-color var(--transition), background var(--transition);
+    }
+    .btn-copy:hover {
+      color: var(--color-text);
+      border-color: var(--color-primary);
+      background: var(--color-primary-highlight);
+    }
+    .btn-copy:active { background: var(--color-border); }
+    .btn-copy.copied {
+      color: var(--color-success);
+      border-color: var(--color-success);
+      background: color-mix(in oklch, var(--color-success) 8%, var(--color-surface));
+    }
+    .btn-copy svg { transition: transform 200ms ease; }
+    .btn-copy.copied svg { transform: scale(0); width: 0; overflow: hidden; }
+    .copy-icon-check { display: none; }
+    .btn-copy.copied .copy-icon-check { display: block; }
+    .btn-copy.copied .copy-icon-default { display: none; }
+
+    .prompt-textarea {
+      width: 100%;
+      max-height: 300px;
+      min-height: 120px;
+      padding: var(--space-4);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+      line-height: 1.65;
+      resize: vertical;
+      overflow-y: auto;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .prompt-textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.12);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+    }
+
+    @media (max-width: 420px) {
+      .input-row { flex-direction: column; }
+      .btn-primary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="page-wrapper" role="main">
+
+    <header class="header">
+      <div class="header-logo">
+        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-label="Article Prompt" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="10" fill="var(--color-primary)" />
+          <rect x="9" y="10" width="14" height="2" rx="1" fill="white" opacity="0.9"/>
+          <rect x="9" y="14.5" width="18" height="2" rx="1" fill="white" opacity="0.7"/>
+          <rect x="9" y="19" width="11" height="2" rx="1" fill="white" opacity="0.7"/>
+          <circle cx="26" cy="25" r="5" fill="white" opacity="0.15"/>
+          <path d="M23.5 25l1.7 1.7 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <div class="header-title">Article Prompt</div>
+          <div class="header-subtitle">Gere o prompt para narração de artigos</div>
+        </div>
+      </div>
+      <button class="theme-toggle" data-theme-toggle aria-label="Alternar tema">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label" for="urlInput">URL do artigo</label>
+        <div class="input-row">
+          <input
+            type="url"
+            id="urlInput"
+            class="url-input"
+            placeholder="https://exemplo.com/artigo"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+          />
+          <button class="btn-primary" id="submitBtn" type="button">Gerar</button>
+        </div>
+        <span class="error-msg" id="errorMsg" role="alert">Por favor, insira uma URL válida.</span>
+        <span class="form-hint">Cole a URL do artigo ou matéria que deseja transformar em narração.</span>
+      </div>
+
+      <div class="divider" id="outputDivider" style="display:none"></div>
+
+      <div class="output-section" id="outputSection" aria-live="polite">
+        <div class="output-header">
+          <span class="output-label">Prompt gerado</span>
+          <button class="btn-copy" id="copyBtn" type="button" aria-label="Copiar prompt">
+            <svg class="copy-icon-default" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <svg class="copy-icon-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span id="copyLabel">Copiar</span>
+          </button>
+        </div>
+        <textarea class="prompt-textarea" id="promptOutput" readonly aria-label="Prompt gerado"></textarea>
+      </div>
+    </div>
+
+    <footer class="footer">Prompt para uso no app da Perplexity · Narração em português brasileiro</footer>
+
+  </main>
+
+  <script>
+    // ─── Theme toggle ────────────────────────────────────────────────
+    (function () {
+      const toggle = document.querySelector('[data-theme-toggle]');
+      const root = document.documentElement;
+      let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      updateIcon();
+
+      toggle.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        updateIcon();
+      });
+
+      function updateIcon() {
+        toggle.setAttribute('aria-label', 'Alternar para tema ' + (theme === 'dark' ? 'claro' : 'escuro'));
+        toggle.innerHTML = theme === 'dark'
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      }
+    })();
+
+    // ─── Prompt base (encoded — not readable in DOM) ──────────────────
+    const _b64 = "TGVpYSBhIG1hdMOpcmlhIG91IGFydGlnbyBubyBsaW5rIGFiYWl4byBlIHRyYW5zZm9ybWUgbyBjb250ZcO6ZG8gZW0gdW0gdGV4dG8gcGFyYSBzZXIgb3V2aWRvIGVtIHZveiBhbHRhIG5vIGFwcCBkYSBQZXJwbGV4aXR5LCBlbSBwb3J0dWd1w6pzIGJyYXNpbGVpcm8uCgpMSU5LOiB7VVJMX1BMQUNFSE9MREVSfQoKUXVlcm8gcXVlIHZvY8OqIGF0dWUgY29tbyB1bSByZWRhdG9yIGUgbmFycmFkb3IgZGUgbm90w61jaWFzIGVtIHBvcnR1Z3XDqnMgZG8gQnJhc2lsLgoKT2JqZXRpdm86Ci0gTGVyIGUgY29tcHJlZW5kZXIgYSBtYXTDqXJpYSBpbnRlaXJhLgotIElkZW50aWZpY2FyIG8gdGVtYSBwcmluY2lwYWwsIG9zIGZhdG9zIGNlbnRyYWlzLCBvIGNvbnRleHRvIGUgYSBjb25jbHVzw6NvLgotIFJlZXNjcmV2ZXIgbyBjb250ZcO6ZG8gZW0gZm9ybWF0byBkZSBuYXJyYcOnw6NvIGNsYXJhLCBuYXR1cmFsIGUgZmx1aWRhLgotIE1hbnRlciBmaWRlbGlkYWRlIGFvcyBmYXRvcyBlIGNpdGFyIGFzIGZvbnRlcyB1c2FkYXMuCgpGb3JtYXRvIGRhIHJlc3Bvc3RhOgotIEVudHJlZ3VlIGVtIHBvcnR1Z3XDqnMgYnJhc2lsZWlyby4KLSBDb21lY2UgY29tIDEgZnJhc2UgZGl6ZW5kbyBkbyBxdWUgc2UgdHJhdGEgYSBtYXTDqXJpYS4KLSBEZXBvaXMgb3JnYW5pemUgZW0gNCBibG9jb3M6CiAgMS4gTyBxdWUgYWNvbnRlY2V1CiAgMi4gQ29udGV4dG8gaW1wb3J0YW50ZQogIDMuIFBvbnRvcyBwcmluY2lwYWlzCiAgNC4gUG9yIHF1ZSBpc3NvIGltcG9ydGEKLSBFc2NyZXZhIGNvbW8gc2UgZm9zc2UgdW0gdGV4dG8gcGFyYSBzZXIgb3V2aWRvLCBuw6NvIHBhcmEgc2VyIGxpZG8gbmEgdGVsYS4KLSBVc2UgZnJhc2VzIGN1cnRhcyBlIHJpdG1vIG5hdHVyYWwuCi0gRXZpdGUgdGFiZWxhcywgZXhjZXNzbyBkZSBidWxsZXRzLCBqYXJnw6NvIGRlc25lY2Vzc8OhcmlvIGUgcGFyw6FncmFmb3MgbG9uZ29zLgotIFF1YW5kbyBob3V2ZXIgbsO6bWVyb3MsIGRhdGFzLCBzaWdsYXMgb3Ugbm9tZXMgdMOpY25pY29zLCBlc2NyZXZhIGRlIGZvcm1hIGbDoWNpbCBkZSBlbnRlbmRlciBhbyBvdXZpci4KLSBTZSBob3V2ZXIgb3BpbmnDtWVzIG5vIHRleHRvIG9yaWdpbmFsLCBzZXBhcmUgY2xhcmFtZW50ZSBmYXRvcyBkZSBhbsOhbGlzZS4KLSBOw6NvIGludmVudGUgaW5mb3JtYcOnw7VlcyBxdWUgbsOjbyBlc3RlamFtIG5hcyBmb250ZXMuCi0gTm8gZmluYWwsIGZhw6dhIHVtIGZlY2hhbWVudG8gZW0gMiBmcmFzZXMgcmVzdW1pbmRvIGEgaWRlaWEgY2VudHJhbCBkYSBtYXTDqXJpYS4KCkVzdGlsbyBkZSB2b3o6Ci0gVG9tIGluZm9ybWF0aXZvLCBjYWxtbyBlIG5hdHVyYWwuCi0gUG9ydHVndcOqcyBicmFzaWxlaXJvIG5ldXRyby4KLSBDbGFyZXphIGFjaW1hIGRlIHNvZmlzdGljYcOnw6NvLgotIEV2aXRlIHJlcGV0acOnw7VlcyBlIHBhbGF2cmFzIGRpZsOtY2VpcyBxdWFuZG8gaG91dmVyIGFsdGVybmF0aXZhIHNpbXBsZXMuCgpTZSBhIG1hdMOpcmlhIGZvciBsb25nYToKLSBQcmlvcml6ZSBvcyBmYXRvcyBtYWlzIHJlbGV2YW50ZXMuCi0gQ29ydGUgZGV0YWxoZXMgc2VjdW5kw6Fyb3MuCi0gTWFudGVuaGEgbm8gbcOheGltbyBbMiBhIDQgbWludXRvc10gZGUgbGVpdHVyYSBlc3RpbWFkYS4KClNhw61kYSBmaW5hbDoKLSBFbnRyZWd1ZSBhcGVuYXMgbyB0ZXh0byBmaW5hbCBkYSBuYXJyYcOnw6NvLgotIE7Do28gZXhwbGlxdWUgc2V1IHByb2Nlc3NvLgotIE7Do28gdXNlIG1hcmtkb3duLgotIE7Do28gdXNlIHTDrXR1bG9zIGVtIGluZ2zDqnMuCgpVc2UgdW0gcml0bW8gZGUgbG9jdcOnw6NvIG5hdHVyYWwsIGNvbSBwYXVzYXMgaW1wbMOtY2l0YXMgZW50cmUgaWRlaWFzLCBzZW0gbGlzdGFzIHZpc8OtdmVpcyBlIHNlbSByZXBldGlyIG8gbm9tZSBkYSBmb250ZSBvIHRlbXBvIHRvZG8u";
+
+    function decodePrompt(url) {
+      const raw = atob(_b64);
+      const decoded = decodeURIComponent(escape(raw));
+      return decoded.replace('{URL_PLACEHOLDER}', url);
+    }
+
+    // ─── UI logic ─────────────────────────────────────────────────────
+    const urlInput   = document.getElementById('urlInput');
+    const submitBtn  = document.getElementById('submitBtn');
+    const outputSection = document.getElementById('outputSection');
+    const outputDivider = document.getElementById('outputDivider');
+    const promptOutput  = document.getElementById('promptOutput');
+    const copyBtn    = document.getElementById('copyBtn');
+    const copyLabel  = document.getElementById('copyLabel');
+    const errorMsg   = document.getElementById('errorMsg');
+
+    function isValidUrl(str) {
+      try {
+        const u = new URL(str.trim());
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch { return false; }
+    }
+
+    function showOutput(prompt) {
+      outputDivider.style.display = 'block';
+      promptOutput.value = prompt;
+      outputSection.classList.add('visible');
+      // auto-resize textarea up to 300px
+      promptOutput.style.height = 'auto';
+      const h = Math.min(promptOutput.scrollHeight, 300);
+      promptOutput.style.height = h + 'px';
+    }
+
+    function generate() {
+      const raw = urlInput.value.trim();
+      errorMsg.classList.remove('visible');
+      urlInput.classList.remove('error');
+
+      if (!raw || !isValidUrl(raw)) {
+        urlInput.classList.add('error');
+        errorMsg.classList.add('visible');
+        urlInput.focus();
+        return;
+      }
+
+      const prompt = decodePrompt(raw);
+      showOutput(prompt);
+
+      // reset copy button
+      copyBtn.classList.remove('copied');
+      copyLabel.textContent = 'Copiar';
+    }
+
+    submitBtn.addEventListener('click', generate);
+    urlInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') generate();
+    });
+    urlInput.addEventListener('input', () => {
+      urlInput.classList.remove('error');
+      errorMsg.classList.remove('visible');
+    });
+
+    // Copy to clipboard
+    copyBtn.addEventListener('click', async () => {
+      const text = promptOutput.value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // fallback
+        promptOutput.select();
+        document.execCommand('copy');
+      }
+      copyBtn.classList.add('copied');
+      copyLabel.textContent = 'Copiado!';
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyLabel.textContent = 'Copiar';
+      }, 2200);
+    });
+  </script>
+</body>
+</html>
